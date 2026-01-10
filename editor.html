@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>本地编辑器 — 旅行足迹</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body, html, #map { height: 100%; margin: 0; }
+    #editor-panel { position: absolute; right: 8px; top: 8px; z-index: 2000; background:#fff;padding:10px;border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,0.2); width:320px; max-width:calc(100% - 40px); display:none }
+    #editor-panel label { display:block; margin-top:6px; font-weight:600 }
+    #editor-panel input, #editor-panel textarea { width:100%; box-sizing:border-box }
+    #editor-panel button { margin-top:8px }
+    /* Hide the attribution flag element (some Leaflet builds add this with a class) */
+    .leaflet-attribution-flag { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="editor-panel">
+    <div id="panel-title" style="font-weight:bold;margin-bottom:6px"></div>
+    <label>Name</label>
+    <input id="field-name" />
+    <label>Dates (comma-separated)</label>
+    <input id="field-dates" placeholder="YYYY-MM,YYYY-MM" />
+    <label>Note</label>
+    <textarea id="field-note" rows="4"></textarea>
+    <div style="text-align:right"><button id="save">保存</button> <button id="close">关闭</button></div>
+    <div id="save-status" style="margin-top:6px;font-size:13px;color:green;display:none">已保存</div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="src/editor.js"></script>
+</body>
+</html>

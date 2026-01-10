@@ -1,0 +1,52 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log
+pnpm-lock.yaml
+package-lock.json
+
+# Build / output
+dist/
+build/
+coverage/
+*.tgz
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Editor / OS
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Temporary / cache
+.cache/
+tmp/
+*.tmp
+
+# Backups
+*.bak
+*.bak.*
+*~
+
+# Misc
+coverage/
+.cache/
+
+# Optional: ignore local data/backups if you don't want to commit them
+data/*.bak*
+
+# Keep build.js and other source files by default
+!build.js
+
+# End of file

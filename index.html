@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>旅行足迹</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body, html, #map { height: 100%; margin: 0; }
+    #controls { position: absolute; top: 8px; left: 8px; right: auto; z-index: 1000; background: rgba(255,255,255,0.9); padding:8px; border-radius:6px }
+    /* Hide the attribution flag element (some Leaflet builds add this with a class) */
+    .leaflet-attribution-flag { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <label for="yearFilter">筛选年份：</label>
+    <select id="yearFilter"><option value="all">全部</option></select>
+    <div id="legend" style="margin-top:8px;font-size:13px">
+      <span style="display:inline-block;width:12px;height:12px;background:#d9534f;margin-right:6px;border:1px solid #000;vertical-align:middle"></span> 访问过
+      <span style="display:inline-block;width:12px;height:12px;background:#3388ff;margin-left:10px;margin-right:6px;border:1px solid #000;vertical-align:middle"></span> 未访问
+    </div>
+  </div>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>
