@@ -1,15 +1,8 @@
 const map = L.map('map', { zoomControl: false }).setView([36, 138], 5);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
-  attribution: '© OpenStreetMap contributors'
+  attribution: '© OpenStreetMap'
 }).addTo(map);
-
-
-
-// VISITS is expected to be provided by data.js (inlined during build) or by loading data/visits.json in dev.
-// Note: do NOT store sensitive data client-side; this is suitable for public travel logs.
-
-// i18n removed — use feature property `name` or fallbacks
 
 // Visits data: prefer build-time `VISITS` if present, otherwise fetch `data/visits.json` at runtime
 let VISITS_DATA = (typeof VISITS !== 'undefined') ? VISITS : null;
