@@ -139,7 +139,10 @@ function getFeatureId(p) {
   return p && (p.N03_007 || p.N03_003 || p.N03_004 || p.id || p.code || p.CITYCODE || p.name) || null;
 }
 function getFeatureName(p) {
-  return p && (p.N03_004 || p.N03_003 || p.name || p.NAME) || 'Unnamed';
+  if (!p) return 'Unnamed';
+  // Prefer `fullname` for Chinese topojson features (marked with _country = 'cn')
+  if (p._country === 'cn' && p.fullname) return p.fullname;
+  return p.N03_004 || p.N03_003 || p.name || p.NAME || 'Unnamed';
 }
 
 // Normalize visit record: accept {date: 'YYYY-MM'} or {dates: ['YYYY-MM', ...]} and return array of date strings
