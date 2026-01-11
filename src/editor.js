@@ -23,9 +23,20 @@ async function loadVisits() {
 }
 
 async function loadGeo() {
-  const res = await fetch('geojson/jp_municipalities.json');
-  if (!res.ok) throw new Error('No geojson');
-  return await res.json();
+  // Try standard GeoJSON / TopoJSON first (no modified variant)
+  let res = await fetch('geojson/jp_municipalities.topojson');
+  if (!res.ok) {
+    res = await fetch('geojson/jp_municipalities.json');
+    if (!res.ok) throw new Error('No geojson');
+  }
+  const data = await res.json();
+  if (data && data.type === 'Topology') {
+    if (typeof topojson === 'undefined') throw new Error('TopoJSON file detected but topojson-client is not loaded.');
+    const objName = Object.keys(data.objects || {})[0];
+    if (!objName) throw new Error('TopoJSON has no objects');
+    return topojson.feature(data, data.objects[objName]);
+  }
+  return data;
 }
 
 function onFeatureClick(e) {

@@ -70,11 +70,12 @@ npm run editor
 ## 注意事项
 
 GeoJSON 数据来源：
-* [s0001/N03-21_210101_designated_city](https://github.com/smartnews-smri/japan-topography/blob/main/data/municipality/geojson/s0001/N03-21_210101_designated_city.json)
+* [topojson/s0010/designated_city](https://github.com/smartnews-smri/japan-topography/blob/main/data/municipality/topojson/s0010/N03-21_210101_designated_city.json)
 
 仓库中包含对 [Japan Topography GeoJSON](https://github.com/smartnews-smri/japan-topography) 的定制修改：
 * 把东京23区合并为一个整体（mapshaper -dissolve）
 * 移除特定争议岛屿的数据
+* 移除四个所属未定地
 
 这些修改仅用于提高个人足迹记录与可视化的便利性。本仓库不保证数据的完整性、精度或与上游项目的同步更新情况，也不对地图的正确性或现实适用性作出保证。
 
@@ -84,7 +85,7 @@ GeoJSON 数据来源：
 
 ### 2026.01.11 V1.0.1
 
-* 替换日本 GeoJSON 为低精度版本，大幅减少体积
+* 替换日本 GeoJSON 为 TopoJSON 版本，大幅减少体积
 * 缩短地图右下角 Attribution 横幅
 
 ### 2026.01.10 V1.0.0

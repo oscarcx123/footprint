@@ -19,8 +19,8 @@ const copy = (p) => {
   fs.copyFileSync(src, dst);
 };
 
-// Stop shipping the local editor (it's been removed) and ensure the GeoJSON is copied
-['index.html','src/main.js','geojson/jp_municipalities.json','geojson/jp_municipalities.geojson','geojson/jp_sample.geojson'].forEach(p => {
+// Stop shipping the local editor (it's been removed) and ensure the GeoJSON/TopoJSON is copied
+['index.html','src/main.js','geojson/jp_municipalities.topojson','geojson/jp_municipalities.json','geojson/jp_municipalities.geojson','geojson/jp_sample.geojson'].forEach(p => {
   try { copy(p); } catch (e) { /* ignore missing optional files */ }
 });
 

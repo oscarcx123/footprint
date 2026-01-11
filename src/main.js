@@ -36,20 +36,34 @@ function populateYearFilter(visits) {
 }
 
 async function loadGeo() {
-  const candidates = ['geojson/jp_municipalities.json','geojson/jp_municipalities.geojson', 'geojson/jp_sample.geojson'];
+  const candidates = ['geojson/jp_municipalities.topojson','geojson/jp_municipalities.json','geojson/jp_municipalities.geojson', 'geojson/jp_sample.geojson'];
   for (const c of candidates) {
     try {
       const res = await fetch(c);
       if (!res.ok) continue;
-      const gj = await res.json();
-      console.log('Loaded geojson:', c);
-      return gj;
+      const data = await res.json();
+      // If TopoJSON, convert to GeoJSON
+      if (data && data.type === 'Topology') {
+        if (typeof topojson === 'undefined') throw new Error('TopoJSON file detected but topojson-client is not loaded.');
+        const objNames = Object.keys(data.objects || {});
+        if (objNames.length === 0) throw new Error('TopoJSON has no objects');
+        const objName = objNames[0];
+        const gj = topojson.feature(data, data.objects[objName]);
+        console.log('Loaded topojson and converted to geojson:', c, 'object:', objName);
+        return gj;
+      }
+      // If already GeoJSON FeatureCollection or Feature
+      if (data && (data.type === 'FeatureCollection' || data.type === 'Feature' || data.features)) {
+        console.log('Loaded geojson:', c);
+        return data;
+      }
+      console.warn('Unknown geo data format in', c);
     } catch (e) {
       // try next candidate
     }
   }
   throw new Error('No geojson found in geojson/ folder');
-}
+} 
 
 function getFeatureId(p) {
   return p && (p.N03_007 || p.N03_003 || p.N03_004 || p.id || p.code || p.CITYCODE || p.name) || null;
