@@ -20,8 +20,24 @@ const copy = (p) => {
 };
 
 // Stop shipping the local editor (it's been removed) and ensure the GeoJSON/TopoJSON is copied
-['index.html','src/main.js','geojson/jp_municipalities.topojson','geojson/jp_municipalities.json','geojson/jp_municipalities.geojson','geojson/jp_sample.geojson'].forEach(p => {
-  try { copy(p); } catch (e) { /* ignore missing optional files */ }
-});
+['index.html','src/main.js'].forEach(p => { try { copy(p); } catch (e) { /* ignore missing optional files */ } });
+
+// Recursively copy geojson/ folder if present
+const geoSrcDir = path.join(__dirname, 'geojson');
+function copyDir(srcDir, dstDir) {
+  if (!fs.existsSync(srcDir)) return;
+  if (!fs.existsSync(dstDir)) fs.mkdirSync(dstDir, { recursive: true });
+  for (const name of fs.readdirSync(srcDir)) {
+    const srcPath = path.join(srcDir, name);
+    const dstPath = path.join(dstDir, name);
+    const stat = fs.statSync(srcPath);
+    if (stat.isDirectory()) copyDir(srcPath, dstPath);
+    else fs.copyFileSync(srcPath, dstPath);
+  }
+}
+copyDir(geoSrcDir, path.join(outDir, 'geojson'));
+// Also copy optional manifest.json alongside
+try { copy('geojson/manifest.json'); } catch (e) { /* ignore */ }
+
 
 console.log('Built to dist/');

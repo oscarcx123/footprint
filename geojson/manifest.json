@@ -1,0 +1,4 @@
+[
+  {"id": "cn", "name": "中国", "file": "cn_municipalities.topojson"},
+  {"id": "jp", "name": "日本", "file": "jp_municipalities.topojson"}
+]

@@ -8,7 +8,20 @@
 
 ## 支持地区
 
-目前只支持日本的`市区町村`层级，未来计划支持中国的地级市层级
+目前支持日本的 `市区町村` 与中国的 `地级市`（仓库中包含 `geojson/jp_municipalities.topojson` 与 `geojson/cn_municipalities.topojson`）。网站会在加载时检查 `geojson/manifest.json`（可选），若存在则按 manifest 中的条目自动填充国家/地区菜单，便于未来扩展其他国家。
+
+如果你希望无缝支持新国家地区，请在 `geojson/` 下添加对应的 topojson 文件并在 `geojson/manifest.json` 中登记新条目（如下）：
+
+```json
+[
+  {"id": "cn", "name": "中国", "file": "cn_municipalities.topojson"},
+  {"id": "jp", "name": "日本", "file": "jp_municipalities.topojson"},
+  {"id": "us", "name": "美国", "file": "us_states.topojson"}
+]
+```
+
+注：manifest 是可选文件；如未提供，系统会尝试查找内置候选文件 `cn` 与 `jp`
+
 
 ## 快速开始
 
@@ -58,6 +71,11 @@ npm run editor
     "name": "東京23区",
     "dates": ["2010-01", "2011-05"],
     "note": "看演唱会"
+  },
+  "310101": {
+    "name": "上海市",
+    "dates": ["2012-03"],
+    "note": "东方明珠"
   }
 }
 ```
@@ -69,19 +87,27 @@ npm run editor
 
 ## 注意事项
 
-GeoJSON 数据来源：
+GeoJSON / TopoJSON 数据来源：
 * [topojson/s0010/designated_city](https://github.com/smartnews-smri/japan-topography/blob/main/data/municipality/topojson/s0010/N03-21_210101_designated_city.json)
+* [GEOJSON 中国地图数据集 V1.6.3](https://geojson.cn/data/atlas/china)
 
-仓库中包含对 [Japan Topography GeoJSON](https://github.com/smartnews-smri/japan-topography) 的定制修改：
+仓库中包含对 [Japan Topography TopoJSON](https://github.com/smartnews-smri/japan-topography) 的定制修改：
 * 把东京23区合并为一个整体（mapshaper -dissolve）
 * 移除特定争议岛屿的数据
 * 移除四个所属未定地
+
+仓库中包含对 [GEOJSON 中国地图数据集 V1.6.3](https://geojson.cn/data/atlas/china) 的定制修改：
+* 把直辖市和港澳地区从区级合并为市级（mapshaper -dissolve）
 
 这些修改仅用于提高个人足迹记录与可视化的便利性。本仓库不保证数据的完整性、精度或与上游项目的同步更新情况，也不对地图的正确性或现实适用性作出保证。
 
 在公共展示、法律、行政、政策分析或其他敏感场景中使用前，请自行评估、核验并根据需要进行调整。
 
 ## 更新记录
+
+### 2026.01.11 V1.1.0
+
+* 支持中国的足迹记录
 
 ### 2026.01.11 V1.0.1
 

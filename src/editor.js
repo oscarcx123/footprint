@@ -23,21 +23,85 @@ async function loadVisits() {
 }
 
 async function loadGeo() {
-  // Try standard GeoJSON / TopoJSON first (no modified variant)
-  let res = await fetch('geojson/jp_municipalities.topojson');
-  if (!res.ok) {
-    res = await fetch('geojson/jp_municipalities.json');
-    if (!res.ok) throw new Error('No geojson');
+  // Load an optional manifest like: [{"id":"jp","name":"日本","file":"jp_municipalities.topojson"},{"id":"cn","name":"中国","file":"cn_municipalities.topojson"}]
+  let sources = null;
+  try {
+    const mr = await fetch('geojson/manifest.json');
+    if (mr.ok) sources = await mr.json();
+  } catch(e) { /* ignore */ }
+  const fallback = [
+    {id:'jp', name:'日本', file:'geojson/jp_municipalities.topojson'},
+    {id:'cn', name:'中国', file:'geojson/cn_municipalities.topojson'}
+  ];
+  const tried = sources && Array.isArray(sources) ? sources.map(s => ({id:s.id||s.name, name:s.name||s.id, file:'geojson/'+(s.file||s.path||s.file)})) : fallback;
+  const found = [];
+  for (const s of tried) {
+    try {
+      const res = await fetch(s.file);
+      if (!res.ok) continue;
+      const data = await res.json();
+      let gj = null;
+      if (data && data.type === 'Topology') {
+        if (typeof topojson === 'undefined') throw new Error('TopoJSON file detected but topojson-client is not loaded.');
+        const objNames = Object.keys(data.objects || {});
+        if (objNames.length === 0) throw new Error('TopoJSON has no objects');
+        const objName = objNames[0];
+        gj = topojson.feature(data, data.objects[objName]);
+      } else if (data && (data.type === 'FeatureCollection' || data.type === 'Feature' || data.features)) {
+        gj = data;
+      }
+      if (gj && gj.type === 'FeatureCollection' && Array.isArray(gj.features)) {
+        gj.features.forEach(f => { if (!f.properties) f.properties = {}; f.properties._country = s.id; });
+        found.push({ id: s.id, name: s.name, file: s.file, geojson: gj });
+      }
+    } catch (e) {
+      // ignore
+    }
   }
-  const data = await res.json();
-  if (data && data.type === 'Topology') {
-    if (typeof topojson === 'undefined') throw new Error('TopoJSON file detected but topojson-client is not loaded.');
-    const objName = Object.keys(data.objects || {})[0];
-    if (!objName) throw new Error('TopoJSON has no objects');
-    return topojson.feature(data, data.objects[objName]);
-  }
-  return data;
+  if (found.length === 0) throw new Error('No geojson/topojson found (looked for manifest or known files)');
+  return found;
 }
+
+function populateCountryFilter(sources) {
+  const sel = document.getElementById('countryFilterEditor');
+  if (!sel) return;
+  while (sel.options.length > 1) sel.remove(1);
+  sources.forEach(s => { const o = document.createElement('option'); o.value = s.id; o.textContent = s.name || s.id; sel.appendChild(o); });
+  sel.onchange = ()=>{ currentCountryFilter = sel.value; updateVisibleLayers(); };
+  sel.value = currentCountryFilter;
+}
+
+let currentCountryFilter = 'all';
+const countryLayers = {}; // id -> L.GeoJSON layer
+let displayedCountryIds = new Set();
+
+function updateVisibleLayers() {
+  for (const id of Object.keys(countryLayers)) { const layer = countryLayers[id]; if (map.hasLayer(layer)) map.removeLayer(layer); }
+  displayedCountryIds.clear();
+  if (currentCountryFilter === 'all') { for (const id of Object.keys(countryLayers)) { map.addLayer(countryLayers[id]); displayedCountryIds.add(id); } } else { if (countryLayers[currentCountryFilter]) { map.addLayer(countryLayers[currentCountryFilter]); displayedCountryIds.add(currentCountryFilter); } }
+  // Recompute bounds
+  const group = L.featureGroup(Array.from(displayedCountryIds).map(id=>countryLayers[id]));
+  if (group && group.getLayers().length) map.fitBounds(group.getBounds());
+  for (const id of Array.from(displayedCountryIds)) if (countryLayers[id]) countryLayers[id].setStyle(styleForFeature);
+}
+
+async function init() {
+  const sources = await loadGeo();
+  VISITS_EDITOR = await loadVisits();
+  populateCountryFilter(sources);
+  // create layers for each source
+  for (const s of sources) {
+    const layer = L.geoJSON(s.geojson, { style: styleForFeature, onEachFeature: (feature, layer)=>{ layer.on({ click: onFeatureClick, mouseover: highlightOnHover, mouseout: resetOnLeave }); }}).addTo(map);
+    countryLayers[s.id] = layer;
+  }
+  updateVisibleLayers();
+}
+
+document.getElementById('close').addEventListener('click', ()=>{
+  document.getElementById('editor-panel').style.display = 'none';
+  document.getElementById('save-status').style.display = 'none';
+});
+
 
 function onFeatureClick(e) {
   const layer = e.target;
@@ -70,7 +134,7 @@ function highlightOnHover(e) {
   content += noteHtml;
   layer.bindTooltip(content, { permanent: false, direction: 'auto' }).openTooltip();
 }
-function resetOnLeave(e) { geoLayer.resetStyle(e.target); e.target.closeTooltip(); }
+function resetOnLeave(e) { const layer = e.target; const p = layer.feature && layer.feature.properties; const cid = p && p._country; if (cid && countryLayers[cid] && countryLayers[cid].resetStyle) countryLayers[cid].resetStyle(layer); else layer.setStyle(styleForFeature(layer.feature)); layer.closeTooltip(); }
 
 function styleForFeature(feature) {
   const id = getFeatureId(feature.properties || {});
@@ -81,26 +145,7 @@ function styleForFeature(feature) {
   return { color: color, weight: 1, fillColor: color, fillOpacity: isVisited ? 0.6 : 0.12, opacity:1 };
 }
 
-function createGeoLayer(gj) {
-  if (geoLayer) geoLayer.remove();
-  geoLayer = L.geoJSON(gj, {
-    style: styleForFeature,
-    onEachFeature: (feature, layer) => {
-      layer.on({ click: onFeatureClick, mouseover: highlightOnHover, mouseout: resetOnLeave });
-    }
-  }).addTo(map);
-}
 
-async function init() {
-  gjData = await loadGeo();
-  VISITS_EDITOR = await loadVisits();
-  createGeoLayer(gjData);
-}
-
-document.getElementById('close').addEventListener('click', ()=>{
-  document.getElementById('editor-panel').style.display = 'none';
-  document.getElementById('save-status').style.display = 'none';
-});
 
 document.getElementById('save').addEventListener('click', async ()=>{
   if (!currentFeature) return;
@@ -128,7 +173,7 @@ document.getElementById('save').addEventListener('click', async ()=>{
     }
     document.getElementById('save-status').style.display = 'block';
     // update styles on map in case user wants immediate feedback
-    if (geoLayer) geoLayer.setStyle(styleForFeature);
+    for (const id of Array.from(displayedCountryIds)) if (countryLayers[id]) countryLayers[id].setStyle(styleForFeature);
   } catch (e) {
     alert('保存失败: ' + e.message + '\n请确认已通过 `node scripts/editor_server.js` 启动本地服务器。');
   }
