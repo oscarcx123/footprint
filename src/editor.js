@@ -1,4 +1,8 @@
-const map = L.map('map', { zoomControl: true }).setView([36, 138], 5);
+const DEFAULT_CENTER = [36, 115];
+const DEFAULT_ZOOM = 4;
+const AUTO_FIT_ON_LOAD = false;
+let _firstUpdate = true;
+const map = L.map('map', { zoomControl: false }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
   attribution: '© OpenStreetMap'
@@ -14,9 +18,14 @@ function getFeatureId(p) {
 }
 function getFeatureName(p) {
   if (!p) return 'Unnamed';
-  // Prefer `fullname` for Chinese topojson features (marked with _country = 'cn')
+  // Prefer `fullname` for Chinese topojson
   if (p._country === 'cn' && p.fullname) return p.fullname;
-  return p.N03_004 || p.N03_003 || p.name || p.NAME || 'Unnamed';
+  // Prefer `N03_001` for Japanese Prefecture topojson
+  if (p._country === 'jp_pref' && p.N03_001) return p.N03_001;
+  // For Japanese municipalities, N03_004 (市区町村) is preferred. For 政令指定都市, N03_004 is null so use N03_003 instead. Notes: Usually N03_001 (都道府県), N03_002 (振興局 in 北海道) and N03_003 (郡) are not used.
+  if (p._country === 'jp') return p.N03_004 || p.N03_003;
+  // This is a fallback for other cases
+  return 'Unnamed';
 }
 
 async function loadVisits() {
@@ -84,7 +93,10 @@ function updateVisibleLayers() {
   if (currentCountryFilter === 'all') { for (const id of Object.keys(countryLayers)) { map.addLayer(countryLayers[id]); displayedCountryIds.add(id); } } else { if (countryLayers[currentCountryFilter]) { map.addLayer(countryLayers[currentCountryFilter]); displayedCountryIds.add(currentCountryFilter); } }
   // Recompute bounds
   const group = L.featureGroup(Array.from(displayedCountryIds).map(id=>countryLayers[id]));
-  if (group && group.getLayers().length) map.fitBounds(group.getBounds());
+  if (group && group.getLayers().length) {
+    if (!_firstUpdate || AUTO_FIT_ON_LOAD) map.fitBounds(group.getBounds());
+  }
+  _firstUpdate = false;
   for (const id of Array.from(displayedCountryIds)) if (countryLayers[id]) countryLayers[id].setStyle(styleForFeature);
 }
 
