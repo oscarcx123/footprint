@@ -125,7 +125,7 @@ GeoJSON / TopoJSON 数据来源：
 
 ### 2026.02.23 V1.3.0
 
-* 优化 TopoJSON 加载速度（Promise.all 并行加载）
+* 优化加载速度（Promise.all 并行加载）
 * 优化 TopoJSON 体积（mapshaper simplify）
 * 折叠四个或以上的 Visited 
     * Visited: 2006-10, 2007-01, 2007-06, 2016-08

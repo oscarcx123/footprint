@@ -105,14 +105,32 @@ function updateVisibleLayers() {
 }
 
 async function init() {
-  const sources = await loadGeo();
-  VISITS_EDITOR = await loadVisits();
+  // 并行加载 geo 和 visits
+  const [sources, visits] = await Promise.all([
+    loadGeo(),
+    loadVisits()
+  ]);
+
+  VISITS_EDITOR = visits || {};
+
   populateCountryFilter(sources);
+
   // create layers for each source
   for (const s of sources) {
-    const layer = L.geoJSON(s.geojson, { style: styleForFeature, onEachFeature: (feature, layer)=>{ layer.on({ click: onFeatureClick, mouseover: highlightOnHover, mouseout: resetOnLeave }); }}).addTo(map);
+    const layer = L.geoJSON(s.geojson, {
+      style: styleForFeature,
+      onEachFeature: (feature, layer) => {
+        layer.on({
+          click: onFeatureClick,
+          mouseover: highlightOnHover,
+          mouseout: resetOnLeave
+        });
+      }
+    }).addTo(map);
+
     countryLayers[s.id] = layer;
   }
+
   updateVisibleLayers();
 }
 
