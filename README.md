@@ -127,6 +127,9 @@ GeoJSON / TopoJSON 数据来源：
 
 * 优化 TopoJSON 加载速度（Promise.all 并行加载）
 * 优化 TopoJSON 体积（mapshaper simplify）
+* 折叠四个或以上的 Visited 
+    * Visited: 2006-10, 2007-01, 2007-06, 2016-08
+    * 会显示成 Visited: 2006-10, (2 more), 2016-08
 
 ### 2026.02.06 V1.2.1
 

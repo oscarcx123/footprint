@@ -329,12 +329,23 @@ function highlightFeature(e) {
   } else {
     const id = getFeatureId(p);
     const visit = (VISITS_DATA && id) ? VISITS_DATA[id] : null;
-    const dates = getVisitDates(visit);
+    const allDates = getVisitDates(visit);
     const note = visit ? (visit.note || '') : '';
     const noteHtml = note ? note.replace(/\n/g, '<br/>') : '';
-    if (dates.length) content += 'Visited: ' + dates.join(', ') + '<br/>';
-    else if (visit && (visit.name || visit.note)) content += 'Visited<br/>';
-    else content += 'Not visited<br/>';
+    // Apply current year filter when present
+    const yf = (typeof currentYearFilter !== 'undefined') ? currentYearFilter : 'all';
+    const dates = (yf === 'all') ? allDates.slice() : allDates.filter(d => d && d.startsWith(yf));
+
+    if (dates.length) {
+      if (dates.length >= 4) {
+        const middleCount = dates.length - 2;
+        content += 'Visited: ' + dates[0] + ', (' + middleCount + ' more), ' + dates[dates.length-1] + '<br/>';
+      } else {
+        content += 'Visited: ' + dates.join(', ') + '<br/>';
+      }
+    } else if (visit && (visit.name || visit.note)) {
+      content += 'Visited<br/>';
+    } else content += 'Not visited<br/>';
     content += noteHtml;
   }
   layer.bindTooltip(content, { permanent: false, direction: 'auto' }).openTooltip();

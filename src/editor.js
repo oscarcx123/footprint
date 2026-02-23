@@ -142,13 +142,22 @@ function highlightOnHover(e) {
   const props = layer.feature.properties || {};
   const id = getFeatureId(props);
   const visit = VISITS_EDITOR[id] || {};
-  const dates = Array.isArray(visit.dates) ? visit.dates : (visit.date ? [visit.date] : []);
+  const allDates = Array.isArray(visit.dates) ? visit.dates : (visit.date ? [visit.date] : []);
+  // Use global currentYearFilter if present (editor may not define it)
+  const yf = (typeof currentYearFilter !== 'undefined') ? currentYearFilter : 'all';
+  const dates = (yf === 'all') ? allDates.slice() : allDates.filter(d => d && d.startsWith(yf));
   const note = visit.note || '';
   const noteHtml = note ? note.replace(/\n/g, '<br/>') : '';
   const title = getFeatureName(props);
   let content = `<b>${title}</b><br/>`;
-  if (dates.length) content += 'Visited: ' + dates.join(', ') + '<br/>';
-  else if (visit && (visit.name || visit.note)) content += 'Visited<br/>';
+  if (dates.length) {
+    if (dates.length >= 4) {
+      const middleCount = dates.length - 2;
+      content += 'Visited: ' + dates[0] + ', (' + middleCount + ' more), ' + dates[dates.length-1] + '<br/>';
+    } else {
+      content += 'Visited: ' + dates.join(', ') + '<br/>';
+    }
+  } else if (visit && (visit.name || visit.note)) content += 'Visited<br/>';
   else content += 'Not visited<br/>';
   content += noteHtml;
   layer.bindTooltip(content, { permanent: false, direction: 'auto' }).openTooltip();
