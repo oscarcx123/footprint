@@ -153,8 +153,23 @@ function onFeatureClick(e) {
   document.getElementById('editor-panel').style.display = 'block';
 }
 
+let currentHighlightedLayer = null;
+
 function highlightOnHover(e) {
   const layer = e.target;
+  // If another layer is currently highlighted, reset it first to avoid stale highlights
+  if (currentHighlightedLayer && currentHighlightedLayer !== layer) {
+    const p = currentHighlightedLayer.feature && currentHighlightedLayer.feature.properties;
+    const cid = p && p._country;
+    if (cid && countryLayers[cid] && countryLayers[cid].resetStyle) {
+      countryLayers[cid].resetStyle(currentHighlightedLayer);
+    } else {
+      currentHighlightedLayer.setStyle(styleForFeature(currentHighlightedLayer.feature));
+    }
+    if (currentHighlightedLayer.closeTooltip) currentHighlightedLayer.closeTooltip();
+  }
+  
+  currentHighlightedLayer = layer;
   layer.setStyle({ weight: 2, fillOpacity: 0.8 });
   if (layer.bringToFront) layer.bringToFront();
   const props = layer.feature.properties || {};
@@ -180,7 +195,21 @@ function highlightOnHover(e) {
   content += noteHtml;
   layer.bindTooltip(content, { permanent: false, direction: 'auto' }).openTooltip();
 }
-function resetOnLeave(e) { const layer = e.target; const p = layer.feature && layer.feature.properties; const cid = p && p._country; if (cid && countryLayers[cid] && countryLayers[cid].resetStyle) countryLayers[cid].resetStyle(layer); else layer.setStyle(styleForFeature(layer.feature)); layer.closeTooltip(); }
+function resetOnLeave(e) {
+  const layer = e.target;
+  // Only reset if this is the currently highlighted layer (avoid interfering with rapid movements)
+  if (currentHighlightedLayer === layer) {
+    const p = layer.feature && layer.feature.properties;
+    const cid = p && p._country;
+    if (cid && countryLayers[cid] && countryLayers[cid].resetStyle) {
+      countryLayers[cid].resetStyle(layer);
+    } else {
+      layer.setStyle(styleForFeature(layer.feature));
+    }
+    layer.closeTooltip();
+    currentHighlightedLayer = null;
+  }
+}
 
 function styleForFeature(feature) {
   const id = getFeatureId(feature.properties || {});
