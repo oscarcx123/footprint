@@ -59,13 +59,12 @@ async function loadGeo() {
     {id:'cn', name:'中国', file:'geojson/cn_municipalities.topojson'}
   ];
   const tried = sources && Array.isArray(sources) ? sources.map(s => ({id:s.id||s.name, name:s.name||s.id, file:'geojson/'+(s.file||s.path||s.file)})) : fallback;
-  const found = [];
-  for (const s of tried) {
+
+  const fetchAndConvert = async (s) => {
     try {
       const res = await fetch(s.file);
-      if (!res.ok) continue;
+      if (!res.ok) return null;
       const data = await res.json();
-      // If TopoJSON, convert to GeoJSON
       let gj = null;
       if (data && data.type === 'Topology') {
         if (typeof topojson === 'undefined') throw new Error('TopoJSON file detected but topojson-client is not loaded.');
@@ -78,44 +77,45 @@ async function loadGeo() {
         gj = data;
         console.log('Loaded geojson:', s.file);
       }
-      if (gj) {
-        // Tag features with country id for filtering and future extensibility
-        if (gj.type === 'FeatureCollection' && Array.isArray(gj.features)) {
-          gj.features.forEach(f => { if (!f.properties) f.properties = {}; f.properties._country = s.id; });
-        }
-        found.push({ id: s.id, name: s.name, file: s.file, geojson: gj });
+      if (gj && gj.type === 'FeatureCollection' && Array.isArray(gj.features)) {
+        gj.features.forEach(f => { if (!f.properties) f.properties = {}; f.properties._country = s.id; });
+        return { id: s.id, name: s.name, file: s.file, geojson: gj };
       }
-
-      // If this is the Japanese municipalities file, also try to load prefecture-level topojson (optional)
-      if (s.id === 'jp') {
-        try {
-          const prefRes = await fetch('geojson/jp_prefecture.topojson');
-          if (prefRes.ok) {
-            const prefData = await prefRes.json();
-            let gjpref = null;
-            if (prefData && prefData.type === 'Topology') {
-              if (typeof topojson === 'undefined') throw new Error('TopoJSON file detected but topojson-client is not loaded.');
-              const names = Object.keys(prefData.objects || {});
-              if (names.length) gjpref = topojson.feature(prefData, prefData.objects[names[0]]);
-            } else if (prefData && (prefData.type === 'FeatureCollection' || prefData.type === 'Feature' || prefData.features)) {
-              gjpref = prefData;
-            }
-            if (gjpref && gjpref.type === 'FeatureCollection' && Array.isArray(gjpref.features)) {
-              // mark these features so we can treat them differently later
-              gjpref.features.forEach(f => { if (!f.properties) f.properties = {}; f.properties._country = s.id + '_pref'; f.properties._layerType = 'prefecture'; });
-              found.push({ id: s.id + '_pref', name: s.name + '（县）', file: 'geojson/jp_prefecture.topojson', geojson: gjpref });
-              console.log('Loaded JP prefecture topojson:', 'geojson/jp_prefecture.topojson');
-            }
-          }
-        } catch(e) {
-          // ignore optional prefecture file errors
-        }
-      }
-
     } catch (e) {
-      // skip
+      // ignore per-file errors
     }
-  }
+    return null;
+  };
+
+  // Kick off all top-level source fetches in parallel
+  const sourcePromises = tried.map(s => fetchAndConvert(s));
+
+  // Also attempt to fetch JP prefecture topojson in parallel (optional)
+  const prefPromise = (async () => {
+    try {
+      const prefRes = await fetch('geojson/jp_prefecture.topojson');
+      if (!prefRes.ok) return null;
+      const prefData = await prefRes.json();
+      let gjpref = null;
+      if (prefData && prefData.type === 'Topology') {
+        if (typeof topojson === 'undefined') throw new Error('TopoJSON file detected but topojson-client is not loaded.');
+        const names = Object.keys(prefData.objects || {});
+        if (names.length) gjpref = topojson.feature(prefData, prefData.objects[names[0]]);
+      } else if (prefData && (prefData.type === 'FeatureCollection' || prefData.type === 'Feature' || prefData.features)) {
+        gjpref = prefData;
+      }
+      if (gjpref && gjpref.type === 'FeatureCollection' && Array.isArray(gjpref.features)) {
+        gjpref.features.forEach(f => { if (!f.properties) f.properties = {}; f.properties._country = 'jp_pref'; f.properties._layerType = 'prefecture'; });
+        return { id: 'jp_pref', name: '日本（县）', file: 'geojson/jp_prefecture.topojson', geojson: gjpref };
+      }
+    } catch (e) {
+      // ignore optional prefecture file errors
+    }
+    return null;
+  })();
+
+  const results = await Promise.all([...sourcePromises, prefPromise]);
+  const found = results.filter(r => r);
   if (found.length === 0) throw new Error('No geojson/topojson found (looked for manifest or known files)');
   return found;
 }

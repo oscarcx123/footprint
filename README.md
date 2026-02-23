@@ -8,7 +8,7 @@
 
 ## 支持地区
 
-目前支持日本的 `市区町村` 与中国的 `地级市`（仓库中包含 `geojson/jp_municipalities.topojson` 与 `geojson/cn_municipalities.topojson`）。网站会在加载时检查 `geojson/manifest.json`（可选），若存在则按 manifest 中的条目自动填充国家/地区菜单，便于未来扩展其他国家。
+目前支持日本的 `都道府県` 、 `市区町村` 与中国的 `地级市`（仓库中包含 `geojson/jp_municipalities.topojson` 与 `geojson/cn_municipalities.topojson`）。网站会在加载时检查 `geojson/manifest.json`（可选），若存在则按 manifest 中的条目自动填充国家/地区菜单，便于未来扩展其他国家。
 
 如果你希望无缝支持新国家地区，请在 `geojson/` 下添加对应的 topojson 文件并在 `geojson/manifest.json` 中登记新条目（如下）：
 
@@ -108,15 +108,25 @@ GeoJSON / TopoJSON 数据来源：
 * 把东京23区合并为一个整体（mapshaper -dissolve）
 * 移除特定争议岛屿的数据
 * 移除四个所属未定地
+* 都道府県（mapshaper simplify = 20%）
+* 市区町村（mapshaper simplify = 70%）
 
 仓库中包含对 [GEOJSON 中国地图数据集 V1.6.3](https://geojson.cn/data/atlas/china) 的定制修改：
-* 把直辖市和港澳地区从区级合并为市级（mapshaper -dissolve）
+* 把直辖市和港澳地区分别从区级精度合并为市级（mapshaper -dissolve）
+* 地级市（mapshaper simplify = 20%）
 
-这些修改仅用于提高个人足迹记录与可视化的便利性。本仓库不保证数据的完整性、精度或与上游项目的同步更新情况，也不对地图的正确性或现实适用性作出保证。
+未经 mapshaper simplify 处理的 TopoJSON 文件存放在 topojson_source 文件夹下，如有需要可自取。
 
-在公共展示、法律、行政、政策分析或其他敏感场景中使用前，请自行评估、核验并根据需要进行调整。
+**这些修改仅用于优化加载性能，并提升足迹记录与可视化的便利性。本仓库不保证数据的完整性、精度或与上游项目的同步更新情况，也不对地图的正确性或现实适用性作出保证。**
+
+**在公共展示、法律、行政、政策分析或其他敏感场景中使用前，请自行评估、核验并根据需要进行调整。**
 
 ## 更新记录
+
+### 2026.02.23 V1.3.0
+
+* 优化 TopoJSON 加载速度（Promise.all 并行加载）
+* 优化 TopoJSON 体积（mapshaper simplify）
 
 ### 2026.02.06 V1.2.1
 

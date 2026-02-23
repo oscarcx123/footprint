@@ -46,11 +46,11 @@ async function loadGeo() {
     {id:'cn', name:'中国', file:'geojson/cn_municipalities.topojson'}
   ];
   const tried = sources && Array.isArray(sources) ? sources.map(s => ({id:s.id||s.name, name:s.name||s.id, file:'geojson/'+(s.file||s.path||s.file)})) : fallback;
-  const found = [];
-  for (const s of tried) {
+
+  const fetchAndConvert = async (s) => {
     try {
       const res = await fetch(s.file);
-      if (!res.ok) continue;
+      if (!res.ok) return null;
       const data = await res.json();
       let gj = null;
       if (data && data.type === 'Topology') {
@@ -64,12 +64,16 @@ async function loadGeo() {
       }
       if (gj && gj.type === 'FeatureCollection' && Array.isArray(gj.features)) {
         gj.features.forEach(f => { if (!f.properties) f.properties = {}; f.properties._country = s.id; });
-        found.push({ id: s.id, name: s.name, file: s.file, geojson: gj });
+        return { id: s.id, name: s.name, file: s.file, geojson: gj };
       }
     } catch (e) {
-      // ignore
+      // ignore per-file errors
     }
-  }
+    return null;
+  };
+
+  const results = await Promise.all(tried.map(s => fetchAndConvert(s)));
+  const found = results.filter(r => r);
   if (found.length === 0) throw new Error('No geojson/topojson found (looked for manifest or known files)');
   return found;
 }
